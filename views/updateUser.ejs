@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Usuario</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    
+</head>
+<body>
+    <section class="form-Registro">
+        <h4>Editar Usuario</h4>
+        <form action="/update" method="post">
+        <input type="hidden" name="idCliente" value="<%= data.idCliente %>">    
+        <label>Nombre</label><input class="controls" type="text" name="nombres" value="<%= data.nombres %>" id="nombres" > 
+        <label>Correo</label><input class="controls" type="email" name="correo" value="<%= data.correo %>" id="correo" >
+        <label>Telefono</label><input class="controls" type="text" name="telefono" value="<%= data.telefono %>" id="telefono" >
+        <label>Direccion</label><input class="controls" type="text" name="direccion" value="<%= data.direccion %>" id="direccion" >
+        <br>
+        <input class="u-full-width button-primary button input agregar-carrito" type="submit" value="Editar Usuario">
+        <a href="/admin" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
+        </form>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+</body>
+</html>

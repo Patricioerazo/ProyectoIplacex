@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecommerce Iplacex</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
+
+</head>
+
+<body>
+    <header id="header" class="header">
+        <p>Estás Logueado // <a href="logout">Cerrar Sesión</a></p>
+
+
+        <div class="container">
+            <div class="row">
+                <div class="four columns">
+                    <a href="/"><img src="/img/logo.jpg" id="logo"></a>
+                </div>
+                <div class="two columns u-pull-right">
+                    <h5 class="decora-rol">Vendedores</h5>
+                </div>
+            </div>
+        </div><br>
+
+    </header>
+
+
+    <div>
+        <div class="container">
+            <div class="row">
+                <div class="six columns">
+                    <div class="contenido-hero">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="barra">
+        <div class="container">
+            <div class="row">
+                <div class="four columns icono icono1">
+                    <p>Cientos de Juegos Interactivos<br>
+                        Estimula Mentalmente a los Niños</p>
+                </div>
+                <div class="four columns icono icono2">
+                    <p>Eleva su Concentración<br>
+                        E Interactua con el Mundo</p>
+                </div>
+                <div class="four columns icono icono3">
+                    <p>Opciones de Pago<br>
+                        Sistema Contra Entrega</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    </div>
+    <div id="lista-cursos" class="container">
+        <h4 id="encabezado" class="encabezado decora-text">Bienvenidos Vendedores</h4>
+        <h6 class="decora-h6">"En este espacio puede agregar o editar productos y seguir o editar despachos"
+        </h6>
+
+
+
+
+        <div class="container">
+            <h5 id="encabezado" class="encabezado decora-text">Editar Productos</h5>
+            <br>
+            <a href="/addProducto" class="u-full-width button-primary button input">Agregar Producto</a>
+            <div class="rowend mt-5">
+                <div class="colend-md-6">
+                    <table>
+                        <thead>
+                            <tr class="decora-h6">
+                                <th>ID Producto</th>
+                                <th>Nombre</th>
+                                <th>Descripcion</th>
+                                <th>Precio</th>
+                                <th>idCategoria</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (productos && productos.length> 0) { %>
+                                <% productos.forEach((p)=> { %>
+                                    <tr>
+                                        <td>
+                                            <%= p.idProducto %>
+                                        </td>
+                                        <td>
+                                            <%= p.nombreProducto %>
+                                        </td>
+                                        <td>
+                                            <%= p.descripcion %>
+                                        </td>
+                                        <td>
+                                            <%= p.precio %>
+                                        </td>
+                                        <td>
+                                            <%= p.idCategoria %>
+                                        </td>
+                                        <td>
+                                           <a href="/deleteProducto/<%= p.idProducto %>" class="u-full-width button-primary button input">Eliminar</a>
+                                           <a href="/updateProducto/<%= p.idProducto %>" class="u-full-width button-primary button input">Editar</a>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="5">No hay productos registrados</td>
+                                            </tr>
+                                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+            <div class="colend-md5">
+                <div>
+                    <table>
+
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+
+            <h5 id="encabezado" class="encabezado decora-text">Editar pedidos recientes</h5>
+
+            <div class="rowend mt-5">
+                <div class="colend-md-6">
+                    <table>
+                        <thead>
+                            <tr class="decora-h6">
+                                <th>Pedido N°</th>
+                                <th>Cliente N°</th>
+                                <th>fechaPedido</th>
+                                <th>total</th>
+                                <th>idMetodoPago</th>
+                                <th>idEnvio</th>
+
+                                <th>Acciones</th>
+                            </tr>
+
+                        </thead>
+                        <tbody>
+                            <table class="table table-bordered">
+                                <tbody class="table table-bordered">
+                                    <% if (pedidos && pedidos.length> 0) { %>
+                                        <% pedidos.forEach((pedido)=> { %>
+                                            <tr>
+                                                <td>
+                                                    <%= pedido.idPedido %>
+                                                </td>
+                                                <td>
+                                                    <%= pedido.idCliente %>
+                                                </td>
+                                                <td>
+                                                    <%= (pedido.fechaPedido instanceof Date) ? pedido.fechaPedido.toISOString().slice(0,10): pedido.fechaPedido %>
+                                                </td>
+                                                <td>$<%= pedido.total %>
+                                                </td>
+                                                <td>
+                                                    <%= pedido.idMetodoPago %>
+                                                </td>
+                                                <td>
+                                                    <%= pedido.idEnvio %>
+                                                </td>
+                                                <td>
+                                                    <a href="/deletePedido/<%= pedido.idPedido %>" class="u-full-width button-primary button input">Eliminar</a>
+                                                   <a href="/updatePedido/<%= pedido.idPedido %>" class="u-full-width button-primary button input">Editar</a>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                                <% } else { %>
+                                                    <tr>
+                                                        <td colspan="6">No hay pedidos registrados</td>
+                                                    </tr>
+
+                                                    <% } %>
+                                </tbody>
+                            </table>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+            <div class="colend-md5">
+                <div>
+                    <table>
+                        <thead>
+                            <tr>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <footer id="footer" class="footer">
+
+
+            <div class="container">
+                <div class="row">
+                    <div class="four columns">
+                        <nav id="principal" class="menu">
+                            <br>
+                            <br>
+                            <br>
+                            <a class="enlace" href="#">Para tu Negocio</a>
+                            <a class="enlace" href="#">Ventas por Mayor</a>
+                            <br>
+                            <br>
+                            <br>
+                        </nav>
+                    </div>
+                    <div class="four columns">
+                        <nav id="secundaria" class="menu">
+                            <br>
+                            <br>
+                            <br>
+                            <a class="enlace" href="#">¿Quienes Somos?</a>
+                            <a class="enlace" href="#">Despacho de Productos</a>
+                            <br>
+                            <br>
+                            <br>
+                        </nav>
+                    </div>
+                    <div class="four columns">
+                        <nav id="secundaria" class="menu">
+                            <br>
+                            <br>
+                            <br>
+                            <a class="enlace" href="#">Soporte</a>
+                            <a class="enlace" href="#">Contactanos</a>
+                            <br>
+                            <br>
+                            <br>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    <% if (alert) { %>
+        Swal.fire({
+            title: '<%= alertTitle %>',
+            text: '<%= alertMessage %>',
+            icon: '<%= alertIcon %>',
+            showConfirmButton: <%= showConfirmButton %>,
+            timer: <%= timer %>
+        }).then(() => {
+            window.location = "/<%= ruta %>";
+        });
+    <% } %>
+</script>
+
+</body>
+
+</html>

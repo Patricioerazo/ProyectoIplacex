@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Producto</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    
+</head>
+<body>
+    <section class="form-Registro">
+        <h4>Agregar Producto</h4>
+        <form action="/addProducto" method="post">
+         <label>Nombre</label><input class="controls" type="text" name="nombreProducto" id="nombreProducto" required> 
+        <label>Descripción</label><input class="controls" type="text" name="descripcion" id="descripcion" required>
+        <label>Precio</label><input class="controls" type="number" step="500"  name="precio" id="precio" >
+        <label>Categoría</label><input class="controls" type="number" name="idCategoria" id="idCategoria" >
+        <br>
+         <button type="submit" class="btn btn-success">Guardar</button>
+        <input class="u-full-width button-primary button input agregar-carrito" type="submit" value="Guardar">
+        <a href="/admin" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
+        </form>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+</body>
+</html>
+
+

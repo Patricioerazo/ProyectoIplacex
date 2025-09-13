@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Envío</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    
+</head>
+<body>
+    <section class="form-Registro">
+        <h4>Editar Envío</h4>
+        <form action="/updateEnvio" method="post">
+        <input type="hidden" name="idEnvio" value="<%= data.idEnvio %>">    
+        <label>Dirección</label><input class="controls" type="text" name="direccionEnvio" value="<%= data.direccionEnvio %>" id="direccionEnvio" required> 
+        <label>Ciudad</label><input class="controls" type="text" name="ciudad" value="<%= data.ciudad %>" id="ciudad" required>
+        <label>Comuna</label><input class="controls" type="text"   name="estado" value="<%= data.estado %>" id="estado" >
+        <label>codigoPostal</label><input class="controls" type="text" name="codigoPostal" value="<%= data.codigoPostal %>" id="codigoPostal" >
+        <label>ID Envío</label><input class="controls" type="date" name="fechaEnvio" value="<%= data.fechaEnvio.toISOString().split('T')[0] %>" id="fechaEnvio" >
+        <br>
+        <input class="u-full-width button-primary button input agregar-carrito" type="submit" value="Actualizar Envío">
+        <a href="/admin" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
+        </form>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+</body>
+</html>
+
+

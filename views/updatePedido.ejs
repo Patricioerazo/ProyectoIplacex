@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Pedido</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
+</head>
+
+<body>
+    <section class="form-Registro">
+        <h4>Editar Pedido</h4>
+        <form action="/updatePedido" method="post">
+            <input type="hidden" name="idPedido" value="<%= data.idPedido %>">
+            <label>ID Cliente</label><input class="controls" type="text" name="idCliente" value="<%= data.idCliente %>"
+                id="idCliente" required>
+            <label>Fecha Pedido</label><input class="controls" type="date" name="fechaPedido" value="<%= data.fechaPedido %>" id="fechaPedido" required>
+            <label>Total</label><input class="controls" type="number" step="500" name="total" value="<%= data.total %>"
+                id="total">
+            <label>ID Método Pago</label><input class="controls" type="number" name="idMetodoPago"
+                value="<%= data.idMetodoPago %>" id="idMetodoPago">
+            <label>ID Envío</label><input class="controls" type="number" name="idEnvio" value="<%= data.idEnvio %>"
+                id="idEnvio">
+            <br>
+            <input class="u-full-width button-primary button input agregar-carrito" type="submit"
+                value="Actualizar Pedido">
+            <a href="/admin" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
+        </form>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+</body>
+
+</html>

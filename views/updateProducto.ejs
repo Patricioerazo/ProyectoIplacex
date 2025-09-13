@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Producto</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    
+</head>
+<body>
+    <section class="form-Registro">
+        <h4>Editar Producto</h4>
+        <form action="/updateProducto" method="post">
+        <input type="hidden" name="idProducto" value="<%= data.idProducto %>">    
+        <label>Nombre</label><input class="controls" type="text" name="nombreProducto" value="<%= data.nombreProducto %>" id="nombreProducto" > 
+        <label>Descripcion</label><input class="controls" type="text" name="descripcion" value="<%= data.descripcion %>" id="descripcion" >
+        <label>Precio</label><input class="controls" type="number" name="precio" step="500"  value="<%= data.precio %>" id="precio" >
+        <label>Id Categoria</label><input class="controls" type="number" name="idCategoria" value="<%= data.idCategoria %>" id="idCategoria" >
+        <br>
+        <input class="u-full-width button-primary button input agregar-carrito" type="submit" value="Actualizar Producto">
+        <a href="/admin" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
+        </form>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+</body>
+</html>
+
+

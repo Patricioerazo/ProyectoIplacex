@@ -158,78 +158,57 @@ app.post('/register', async (req, res) => {
 })
 
 //11.autentificacion
-app.post('/auth', async (req, res) => {
-    const correo = req.body.correo;
-    const pass = req.body.pass;
+connection.query(
+    `SELECT u.idUsuario, u.correo, u.contrasena, u.idRol, c.nombres
+     FROM usuario u
+     LEFT JOIN cliente c ON u.idUsuario = c.idUsuario
+     WHERE u.correo = ?`,
+    [correo],
+    async (error, results) => {
+        if (error) {
+            console.log("Error en la consulta:", error.sqlMessage);
+            return res.status(500).send('Error en la consulta a la DB');
+        }
 
-    if (correo && pass) {
-        connection.query(
-            `SELECT u.idUsuario, u.correo, u.contrasena, u.idRol, c.nombres
-             FROM Usuario u
-             JOIN Cliente c ON u.idUsuario = c.idUsuario
-             WHERE u.correo = ?`,
-            [correo],
-            async (error, results) => {
-                if (error) {
-                    console.log(error);
-                    return res.status(500).send('Error en la consulta');
-                }
+        if (results.length === 0 || !(await bcryptjs.compare(pass, results[0].contrasena))) {
+            return res.render('login', {
+                alert: true,
+                alertTitle: "Error",
+                alertMessage: "Usuario y/o Contraseña Incorrecta",
+                alertIcon: "error",
+                showConfirmButton: true,
+                timer: 2000,
+                ruta: 'login'
+            });
+        }
 
-                // validar credenciales
-                if (results.length === 0 || !(await bcryptjs.compare(pass, results[0].contrasena))) {
-                    return res.render('login', {
-                        alert: true,
-                        alertTitle: "Error",
-                        alertMessage: "Usuario y/o Contraseña Incorrecta",
-                        alertIcon: "error",
-                        showConfirmButton: true,
-                        timer: 2000,
-                        ruta: 'login'
-                    });
-                }
+        // Guardar datos en sesión
+        req.session.loggedin = true;
+        req.session.userId = results[0].idUsuario;
+        req.session.name = results[0].nombres || results[0].correo; // si no tiene cliente, usamos correo
+        req.session.rol = results[0].idRol;
 
-                // Guardamos datos en sesión
-                req.session.loggedin = true;
-                req.session.userId = results[0].idUsuario;
-                req.session.name = results[0].nombres;
-                req.session.rol = results[0].idRol; // rol guardado
+        // Definir ruta según el rol
+        let rutaDestino = '';
+        if (req.session.rol === 1) {
+            rutaDestino = 'admin';
+        } else if (req.session.rol === 2) {
+            rutaDestino = 'vendedor';
+        } else {
+            rutaDestino = 'index_cliente';
+        }
 
-                // 📌 definir ruta según rol
-                let rutaDestino = '';
-                if (req.session.rol === 1) { // admin
-                    rutaDestino = 'admin';
-                } else if (req.session.rol === 2) { // vendedor
-                    rutaDestino = 'vendedor';
-                } else if (req.session.rol === 3) { // cliente
-                    rutaDestino = 'cliente'; //  ir a index_cliente.ejs
-                } else {
-                    rutaDestino = ''; // fallback
-                }
-
-                // mostrar SweetAlert + redirigir
-                res.render('login', {
-                    alert: true,
-                    alertTitle: "Conexión Exitosa",
-                    alertMessage: "Ingresando...",
-                    alertIcon: "success",
-                    showConfirmButton: false,
-                    timer: 3000,
-                    ruta: rutaDestino
-                });
-            }
-        );
-    } else {
-        res.render('login', {
+        return res.render('login', {
             alert: true,
-            alertTitle: "Advertencia",
-            alertMessage: "Favor ingresar correo y contraseña",
-            alertIcon: "warning",
-            showConfirmButton: true,
-            timer: false,
-            ruta: 'login'
+            alertTitle: "Conexión Exitosa",
+            alertMessage: "Ingresando...",
+            alertIcon: "success",
+            showConfirmButton: false,
+            timer: 3000,
+            ruta: rutaDestino
         });
     }
-});
+);
 
 
 

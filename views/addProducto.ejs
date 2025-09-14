@@ -16,9 +16,9 @@
         <label>Precio</label><input class="controls" type="number" step="500"  name="precio" id="precio" >
         <label>Categoría</label><input class="controls" type="number" name="idCategoria" id="idCategoria" >
         <br>
-         <button type="submit" class="btn btn-success">Guardar</button>
+         label>Imagen</label><input class="controls" type="file" name="imagen" id="imagen" accept="image/*">
         <input class="u-full-width button-primary button input agregar-carrito" type="submit" value="Guardar">
-        <a href="/admin" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
+        <a href="<%= rol === 1 ? '/admin' : '/vendedor' %>" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
         </form>
     </section>
 

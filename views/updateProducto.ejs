@@ -18,7 +18,7 @@
         <label>Id Categoria</label><input class="controls" type="number" name="idCategoria" value="<%= data.idCategoria %>" id="idCategoria" >
         <br>
         <input class="u-full-width button-primary button input agregar-carrito" type="submit" value="Actualizar Producto">
-        <a href="/admin" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
+        <a href="<%= rol === 1 ? '/admin' : '/vendedor' %>" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
         </form>
     </section>
 

@@ -12,7 +12,10 @@ dotenv.config({ path: './env/.env' });
 
 //4. el directorio public middleware
 app.use('', express.static('public'));
-app.use('', express.static(__dirname + '/public')); 
+app.use('', express.static(__dirname + '/public'));
+
+const multer = require('multer');
+const path = require('path');
 
 //middlewares para sessiones
 
@@ -28,7 +31,7 @@ function isAdmin(req, res, next) {
     if (req.session.loggedin && req.session.rol === 1) { // 1 = admin
         next();
     } else {
-        res.status(403).send("Acceso denegado: solo administradores");
+        res.status(403).send("Acceso denegado: solo administradores ");
     }
 }
 
@@ -254,7 +257,7 @@ function isCliente(req, res, next) {
 // Ruta para index_cliente
 app.get('/index_cliente', isCliente, (req, res) => {
     const sql = "SELECT idProducto, nombreProducto, descripcion, precio FROM Producto ORDER BY idProducto DESC LIMIT 12";
-    
+
     connection.query(sql, (err, productos) => {
         if (err) {
             console.error("Error consultando productos:", err);
@@ -266,7 +269,7 @@ app.get('/index_cliente', isCliente, (req, res) => {
             name: req.session.name,
             productos: productos
         });
-        
+
     });
 });
 
@@ -335,9 +338,7 @@ app.get('/admin', isAdmin, (req, res) => {
                         timer: 2000,
                         ruta: 'admin'
                     });
-
-                    // limpiar alert después de mostrarlo
-                    req.session.alert = null;
+                    req.session.alert = null; // limpiar alert
                 });
             });
         });
@@ -483,7 +484,11 @@ app.post('/update', (req, res) => {
                         };
 
                         // en vez de render, redirigimos al listado admin
-                        res.redirect('/admin');
+                        if (req.session.rol === 1) {
+                            res.redirect('/admin');
+                        } else {
+                            res.redirect('/vendedor');
+                        }
                     });
                 });
             });
@@ -501,7 +506,10 @@ app.get('/updateProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
         if (err) return res.status(500).send("Error en DB");
         if (results.length === 0) return res.status(404).send("Producto no encontrado");
 
-        res.render('updateProducto', { data: results[0] });
+        res.render('updateProducto', {
+            data: results[0],
+            rol: req.session.rol
+        });
     });
 });
 
@@ -552,16 +560,32 @@ app.get('/deleteProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
     });
 });
 // Guardar nuevo producto 
-app.get('/addProducto', isVendedorOrAdmin, (req, res) => {
-    res.render('addProducto.ejs');
+
+// Configuración de almacenamiento
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/img/'); // carpeta donde guardarás las imágenes
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // nombre único
+    }
 });
-app.post('/addProducto', isVendedorOrAdmin, (req, res) => {
+
+const upload = multer({ storage: storage });
+
+app.get('/addProducto', isVendedorOrAdmin, (req, res) => {
+    res.render('addProducto.ejs', { rol: req.session.rol });
+});
+app.post('/addProducto', isVendedorOrAdmin, upload.single('imagen'), (req, res) => {
     const { nombreProducto, descripcion, precio, idCategoria } = req.body;
+    const imagen = req.file ? '/uploads/' + req.file.filename : null;
+
     const sql = `
-        INSERT INTO Producto (nombreProducto, descripcion, precio, idCategoria)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO Producto (nombreProducto, descripcion, precio, idCategoria, imagen)
+        VALUES (?, ?, ?, ?, ?)
     `;
-    connection.query(sql, [nombreProducto, descripcion, precio, idCategoria], (err) => {
+
+    connection.query(sql, [nombreProducto, descripcion, precio, idCategoria, imagen], (err) => {
         if (err) {
             console.error("Error agregando producto:", err);
             return res.status(500).send("Error agregando producto");
@@ -573,7 +597,6 @@ app.post('/addProducto', isVendedorOrAdmin, (req, res) => {
             message: 'El producto fue registrado correctamente'
         };
 
-        // redirige según el rol
         if (req.session.rol === 1) {
             res.redirect('/admin');
         } else {
@@ -581,6 +604,7 @@ app.post('/addProducto', isVendedorOrAdmin, (req, res) => {
         }
     });
 });
+
 
 
 // Editar pedido
@@ -597,15 +621,30 @@ app.get('/updatePedido/:idPedido', isVendedorOrAdmin, (req, res) => {
 });
 
 app.post('/updatePedido', isVendedorOrAdmin, (req, res) => {
-    const sql = "SELECT idPedido, idCliente, DATE_FORMAT(fechaPedido, '%Y-%m-%d') AS fechaPedido, total, idMetodoPago, idEnvio FROM Pedido WHERE idPedido = ?";
-    connection.query(sql, [idPedido], (err, results) => {
-        if (err) return res.status(500).send("Error actualizando pedido");
+    let { idPedido, idCliente, fechaPedido, total, idMetodoPago, idEnvio } = req.body;
+
+    // Si vienen vacíos, asigna null
+    idMetodoPago = idMetodoPago || null;
+    idEnvio = idEnvio || null;
+
+    const sql = `
+        UPDATE Pedido
+        SET idCliente = ?, fechaPedido = ?, total = ?, idMetodoPago = ?, idEnvio = ?
+        WHERE idPedido = ?
+    `;
+
+    connection.query(sql, [idCliente, fechaPedido, total, idMetodoPago, idEnvio, idPedido], (err) => {
+        if (err) {
+            console.error("Error actualizando pedido:", err);
+            return res.status(500).send("Error actualizando pedido");
+        }
 
         req.session.alert = {
             type: 'success',
             title: 'Pedido actualizado',
             message: 'El pedido fue editado correctamente'
         };
+
         if (req.session.rol === 1) {
             res.redirect('/admin');
         } else {
@@ -613,6 +652,8 @@ app.post('/updatePedido', isVendedorOrAdmin, (req, res) => {
         }
     });
 });
+
+
 
 // Eliminar pedido
 app.get('/deletePedido/:idPedido', isVendedorOrAdmin, (req, res) => {
@@ -774,6 +815,8 @@ app.post('/api/pedido', (req, res) => {
         });
     });
 });
+
+//modulo para dejar operativo el formulario de index con mi gmail
 
 const nodemailer = require('nodemailer');
 

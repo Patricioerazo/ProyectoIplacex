@@ -279,7 +279,42 @@
 
 
 
-
+        <div id="lista-cursos" class="container">
+            <h4 id="encabezado" class="encabezado decora-text">Juegos Interactivos con Stock now</h4>
+            <div class="row">
+                <div class="card">
+                    <% if (productos && productos.length> 0) { %>
+                        <% productos.forEach(p=> { %>
+                            <div class="four columns">
+                                <div class="card">
+                                    <img src="<%= p.imagen %>" class="imagen-curso u-full-width"
+                                        alt="<%= p.nombreProducto %>">
+                                    <div class="info-card">
+                                        <h4>
+                                            <%= p.nombreProducto %>
+                                        </h4>
+                                        <p>
+                                            <%= p.descripcion %>
+                                        </p>
+                                        <img src="/img/estrellas.png">
+                                        <!-- mantener span como en productos estáticos -->
+                                        <p class="precio">$<span>
+                                                <%= p.precio %>
+                                            </span></p>
+                                        <a href="#" class="u-full-width button-primary button input agregar-carrito"
+                                            data-id="<%= p.idProducto %>">
+                                            Agregar Al Carrito
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <% }) %>
+                                <% } else { %>
+                                    <p>No hay productos disponibles.</p>
+                                    <% } %>
+                </div>
+            </div>
+        </div>
     </div>
 
 

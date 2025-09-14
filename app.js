@@ -134,7 +134,7 @@ app.post('/register', async (req, res) => {
 
             // b. Insertar en Cliente
             connection.query(
-                'INSERT INTO Cliente (nombres, telefono, direccion, idUsuario) VALUES (?, ?, ?, ?)',
+                'INSERT INTO cliente (nombres, telefono, direccion, idUsuario) VALUES (?, ?, ?, ?)',
                 [nombres, telefono, direccion, idUsuario],
                 (error, resultsCliente) => {
                     if (error) {
@@ -185,7 +185,7 @@ app.post('/auth', async (req, res) => {
         async (error, results) => {
             if (error) {
                 console.log("Error en la consulta:", error.sqlMessage);
-                return res.status(500).send('Error en la consulta a la DB');
+                return res.status(500).send('Error en la consulta de autentificacion a la DB');
             }
 
             if (results.length === 0 || !(await bcryptjs.compare(pass, results[0].contrasena))) {
@@ -256,12 +256,12 @@ function isCliente(req, res, next) {
 
 // Ruta para index_cliente
 app.get('/index_cliente', isCliente, (req, res) => {
-    const sql = "SELECT idProducto, nombreProducto, descripcion, precio FROM Producto ORDER BY idProducto DESC LIMIT 12";
+    const sql = "SELECT idProducto, nombreProducto, descripcion, precio FROM producto ORDER BY idProducto DESC LIMIT 12";
 
     connection.query(sql, (err, productos) => {
         if (err) {
             console.error("Error consultando productos:", err);
-            return res.status(500).send("Error en la consulta a la DB");
+            return res.status(500).send("Error en la consulta direccionando a index cliente de la DB");
         }
 
         res.render('index_cliente', {
@@ -286,29 +286,29 @@ app.get('/logout', (req, res) => {
 app.get('/admin', isAdmin, (req, res) => {
     const sqlClientes = `
         SELECT c.idCliente, c.nombres, c.telefono, c.direccion, u.correo, u.idRol
-        FROM Cliente c
-        JOIN Usuario u ON c.idUsuario = u.idUsuario
+        FROM cliente c
+        JOIN usuario u ON c.idUsuario = u.idUsuario
         ORDER BY c.idCliente DESC
         LIMIT 10;
     `;
 
     const sqlProductos = `
         SELECT idProducto, nombreProducto, descripcion, precio, idCategoria
-        FROM Producto
+        FROM producto
         ORDER BY idProducto DESC
         LIMIT 10;
     `;
 
     const sqlPedidos = `
         SELECT idPedido, idCliente, fechaPedido, total, idMetodoPago, idEnvio
-        FROM Pedido
+        FROM pedido
         ORDER BY idPedido DESC
         LIMIT 10;
     `;
 
     const sqlEnvios = `
         SELECT idEnvio, direccionEnvio, ciudad, estado, codigoPostal, fechaEnvio
-        FROM Envio
+        FROM envio
         ORDER BY idEnvio DESC
         LIMIT 10;
     `;
@@ -353,8 +353,8 @@ app.get('/deleteUser/:idCliente', (req, res) => {
 
     const sqlDelete = `
         DELETE u, c
-        FROM Usuario u
-        JOIN Cliente c ON u.idUsuario = c.idUsuario
+        FROM usuario u
+        JOIN cliente c ON u.idUsuario = c.idUsuario
         WHERE c.idCliente = ?;
     `;
 
@@ -367,8 +367,8 @@ app.get('/deleteUser/:idCliente', (req, res) => {
         // Traer de nuevo la lista después de borrar
         connection.query(
             `SELECT c.idCliente, c.nombres, c.telefono, c.direccion, u.correo, u.idRol
-             FROM Cliente c
-             JOIN Usuario u ON c.idUsuario = u.idUsuario
+             FROM cliente c
+             JOIN usuario u ON c.idUsuario = u.idUsuario
              ORDER BY c.idCliente DESC
              LIMIT 10`,
             (err, results) => {
@@ -398,8 +398,8 @@ app.get('/updateUser/:idCliente', (req, res) => {
 
     const sqlSelect = `
         SELECT c.idCliente, c.nombres, c.telefono, c.direccion, u.correo
-        FROM Cliente c
-        JOIN Usuario u ON c.idUsuario = u.idUsuario
+        FROM cliente c
+        JOIN usuario u ON c.idUsuario = u.idUsuario
         WHERE c.idCliente = ?;
     `;
 
@@ -422,12 +422,12 @@ app.get('/updateUser/:idCliente', (req, res) => {
 app.post('/update', (req, res) => {
     const { idCliente, nombres, correo, telefono, direccion } = req.body;
 
-    // Primero buscamos el idUsuario que corresponde al cliente
+    // 1. Buscar el idUsuario correspondiente al cliente
     const sqlFindUser = `SELECT idUsuario FROM Cliente WHERE idCliente = ?;`;
 
     connection.query(sqlFindUser, [idCliente], (err, results) => {
         if (err) {
-            console.error("Error buscando idUsuario:", err);
+            console.error("Error buscando idUsuario:", err.sqlMessage || err);
             return res.status(500).send("Error en la base de datos (buscando usuario)");
         }
 
@@ -437,53 +437,57 @@ app.post('/update', (req, res) => {
 
         const idUsuario = results[0].idUsuario;
 
-        // Iniciamos una transacción para que ambos updates sean consistentes
+        // 2. Iniciar transacción
         connection.beginTransaction(err => {
-            if (err) throw err;
+            if (err) {
+                console.error("Error iniciando transacción:", err.sqlMessage || err);
+                return res.status(500).send("Error iniciando transacción");
+            }
 
-            // Update en Cliente
+            // 3. Update en Cliente
             const sqlUpdateCliente = `
-                UPDATE Cliente 
+                UPDATE cliente 
                 SET nombres = ?, telefono = ?, direccion = ?
                 WHERE idCliente = ?;
             `;
             connection.query(sqlUpdateCliente, [nombres, telefono, direccion, idCliente], (err) => {
                 if (err) {
                     return connection.rollback(() => {
-                        console.error("Error actualizando Cliente:", err);
+                        console.error("Error actualizando Cliente:", err.sqlMessage || err);
                         res.status(500).send("Error actualizando Cliente");
                     });
                 }
 
-                // Update en Usuario
+                // 4. Update en Usuario
                 const sqlUpdateUsuario = `
-                    UPDATE Usuario 
+                    UPDATE usuario 
                     SET correo = ?
                     WHERE idUsuario = ?;
                 `;
                 connection.query(sqlUpdateUsuario, [correo, idUsuario], (err) => {
                     if (err) {
                         return connection.rollback(() => {
-                            console.error("Error actualizando Usuario:", err);
+                            console.error("Error actualizando Usuario:", err.sqlMessage || err);
                             res.status(500).send("Error actualizando Usuario");
                         });
                     }
 
-                    // Commit si ambos updates fueron exitosos
+                    // 5. Commit si todo fue exitoso
                     connection.commit(err => {
                         if (err) {
                             return connection.rollback(() => {
-                                console.error("Error en commit:", err);
+                                console.error("Error en commit:", err.sqlMessage || err);
                                 res.status(500).send("Error finalizando actualización");
                             });
                         }
+
+                        // 6. Notificación al usuario
                         req.session.alert = {
                             type: 'success',
                             title: 'Actualizado',
                             message: 'El registro del cliente fue actualizado correctamente'
                         };
 
-                        // en vez de render, redirigimos al listado admin
                         if (req.session.rol === 1) {
                             res.redirect('/admin');
                         } else {
@@ -500,7 +504,7 @@ app.post('/update', (req, res) => {
 //17 Mostrar formulario de edición
 app.get('/updateProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
     const { idProducto } = req.params;
-    const sql = "SELECT * FROM Producto WHERE idProducto = ?";
+    const sql = "SELECT * FROM producto WHERE idProducto = ?";
 
     connection.query(sql, [idProducto], (err, results) => {
         if (err) return res.status(500).send("Error en DB");
@@ -517,7 +521,7 @@ app.get('/updateProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
 app.post('/updateProducto', isVendedorOrAdmin, (req, res) => {
     const { idProducto, nombreProducto, descripcion, precio, idCategoria } = req.body;
     const sql = `
-        UPDATE Producto 
+        UPDATE producto 
         SET nombreProducto = ?, descripcion = ?, precio = ?, idCategoria = ?
         WHERE idProducto = ?
     `;
@@ -540,7 +544,7 @@ app.post('/updateProducto', isVendedorOrAdmin, (req, res) => {
 // Eliminar producto
 app.get('/deleteProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
     const { idProducto } = req.params;
-    const sql = "DELETE FROM Producto WHERE idProducto = ?";
+    const sql = "DELETE FROM producto WHERE idProducto = ?";
 
     connection.query(sql, [idProducto], (err) => {
         if (err) return res.status(500).send("Error eliminando producto");
@@ -581,7 +585,7 @@ app.post('/addProducto', isVendedorOrAdmin, upload.single('imagen'), (req, res) 
     const imagen = req.file ? '/uploads/' + req.file.filename : null;
 
     const sql = `
-        INSERT INTO Producto (nombreProducto, descripcion, precio, idCategoria, imagen)
+        INSERT INTO producto (nombreProducto, descripcion, precio, idCategoria, imagen)
         VALUES (?, ?, ?, ?, ?)
     `;
 
@@ -616,10 +620,12 @@ app.get('/updatePedido/:idPedido', isVendedorOrAdmin, (req, res) => {
         if (err) return res.status(500).send("Error en DB");
         if (results.length === 0) return res.status(404).send("Pedido no encontrado");
 
-        res.render('updatePedido', { data: results[0] });
+        res.render('updatePedido', { 
+            data: results[0],
+            rol: req.session.rol   // aquí mandamos el rol
+        });
     });
 });
-
 app.post('/updatePedido', isVendedorOrAdmin, (req, res) => {
     let { idPedido, idCliente, fechaPedido, total, idMetodoPago, idEnvio } = req.body;
 
@@ -735,7 +741,7 @@ app.get('/deleteEnvio/:idEnvio', isVendedorOrAdmin, (req, res) => {
 app.get('/vendedor', (req, res) => {
     const sqlProductos = `
         SELECT idProducto, nombreProducto, descripcion, precio, idCategoria
-        FROM Producto
+        FROM producto
         ORDER BY idProducto DESC
         LIMIT 10;
     `;
@@ -797,7 +803,7 @@ app.post('/api/pedido', (req, res) => {
         const idPedido = result.insertId;
 
         // 2. Insertar detalles
-        const sqlDetalle = "INSERT INTO pedidodetalle (idPedidoDetalle, idProducto, cantidad, precioUnitario) VALUES ?";
+        const sqlDetalle = "INSERT INTO pedidodetalle (idPedidoDetalle, idPedido, idProducto, cantidad, precioUnitario) VALUES ?";
         const values = carrito.map(item => [
             idPedido,
             item.id, // ojo: este `id` debe coincidir con Producto.idProducto

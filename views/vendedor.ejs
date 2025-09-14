@@ -106,8 +106,10 @@
                                             <%= p.idCategoria %>
                                         </td>
                                         <td>
-                                           <a href="/deleteProducto/<%= p.idProducto %>" class="u-full-width button-primary button input">Eliminar</a>
-                                           <a href="/updateProducto/<%= p.idProducto %>" class="u-full-width button-primary button input">Editar</a>
+                                            <a href="/deleteProducto/<%= p.idProducto %>"
+                                                class="u-full-width button-primary button input">Eliminar</a>
+                                            <a href="/updateProducto/<%= p.idProducto %>"
+                                                class="u-full-width button-primary button input">Editar</a>
                                         </td>
                                     </tr>
                                     <% }) %>
@@ -139,11 +141,10 @@
                         <thead>
                             <tr class="decora-h6">
                                 <th>Pedido N°</th>
-                                <th>Cliente N°</th>
-                                <th>fechaPedido</th>
-                                <th>total</th>
-                                <th>idMetodoPago</th>
-                                <th>idEnvio</th>
+                                <th>Fecha Pedido</th>
+                                <th>Total</th>
+                                <th>Metodo Pago</th>
+                                <th>Estado</th>
 
                                 <th>Acciones</th>
                             </tr>
@@ -151,39 +152,34 @@
                         </thead>
                         <tbody>
                             <table class="table table-bordered">
-                                <tbody class="table table-bordered">
+                                <tbody>
                                     <% if (pedidos && pedidos.length> 0) { %>
-                                        <% pedidos.forEach((pedido)=> { %>
+                                        <% pedidos.forEach((p)=> { %>
                                             <tr>
                                                 <td>
-                                                    <%= pedido.idPedido %>
+                                                    <%= p.idPedido %>
                                                 </td>
                                                 <td>
-                                                    <%= pedido.idCliente %>
+                                                    <%= p.fechaPedido %>
                                                 </td>
                                                 <td>
-                                                    <%= (pedido.fechaPedido instanceof Date) ? pedido.fechaPedido.toISOString().slice(0,10): pedido.fechaPedido %>
-                                                </td>
-                                                <td>$<%= pedido.total %>
+                                                    <%= p.total %>
                                                 </td>
                                                 <td>
-                                                    <%= pedido.idMetodoPago %>
+                                                    <%= p.metodoPago || 'Sin método' %>
                                                 </td>
                                                 <td>
-                                                    <%= pedido.idEnvio %>
+                                                    <%= p.estadoEnvio || 'Pendiente' %>
                                                 </td>
                                                 <td>
-                                                    <a href="/deletePedido/<%= pedido.idPedido %>" class="u-full-width button-primary button input">Eliminar</a>
-                                                   <a href="/updatePedido/<%= pedido.idPedido %>" class="u-full-width button-primary button input">Editar</a>
+                                                    <a href="/deletePedido/<%= p.idPedido %>"
+                                                        class="u-full-width button-primary button input">Eliminar</a>
+                                                    <a href="/updatePedido/<%= p.idPedido %>"
+                                                        class="u-full-width button-primary button input">Editar</a>
                                                 </td>
                                             </tr>
                                             <% }) %>
-                                                <% } else { %>
-                                                    <tr>
-                                                        <td colspan="6">No hay pedidos registrados</td>
-                                                    </tr>
-
-                                                    <% } %>
+                                                <% } %>
                                 </tbody>
                             </table>
                         </tbody>
@@ -249,20 +245,20 @@
             </div>
         </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
     <% if (alert) { %>
-        Swal.fire({
-            title: '<%= alertTitle %>',
-            text: '<%= alertMessage %>',
-            icon: '<%= alertIcon %>',
-            showConfirmButton: <%= showConfirmButton %>,
-            timer: <%= timer %>
+                Swal.fire({
+                    title: '<%= alertTitle %>',
+                    text: '<%= alertMessage %>',
+                    icon: '<%= alertIcon %>',
+                    showConfirmButton: <%= showConfirmButton %>,
+                    timer: <%= timer %>
         }).then(() => {
-            window.location = "/<%= ruta %>";
-        });
+                        window.location = "/<%= ruta %>";
+                    });
     <% } %>
-</script>
+        </script>
 
 </body>
 

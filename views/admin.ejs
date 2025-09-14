@@ -216,7 +216,7 @@
                             <% pedidos.forEach((p)=> { %>
                                 <tr>
                                     <td>
-                                        <%= p.idCliente %>
+                                        <%= p.idPedido %>
                                     </td>
                                     <td>
                                         <%= p.fechaPedido %>
@@ -225,10 +225,10 @@
                                         <%= p.total %>
                                     </td>
                                     <td>
-                                        <%= p.idMetodoPago %>
+                                        <%= p.metodoPago || 'Sin método' %>
                                     </td>
                                     <td>
-                                        <%= p.idEnvio %>
+                                        <%= p.estadoEnvio || 'Pendiente' %>
                                     </td>
                                     <td>
                                         <a href="/deletePedido/<%= p.idPedido %>"
@@ -335,7 +335,7 @@
                         <a class="enlace" href="#">Ventas por Mayor</a>
                         <br>
                         <br>
-                        <br>                        
+                        <br>
                     </nav>
                 </div>
                 <div class="four columns">
@@ -347,7 +347,7 @@
                         <a class="enlace" href="#">Despacho de Productos</a>
                         <br>
                         <br>
-                        <br>                        
+                        <br>
                     </nav>
                 </div>
                 <div class="four columns">

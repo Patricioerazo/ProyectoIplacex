@@ -51,7 +51,7 @@ const bcryptjs = require('bcryptjs');
 
 //7. var de sesion
 const session = require('express-session');
-const connection = require('./database/db.js');
+const { pool } = require('./database/db');
 const { name } = require('ejs');
 app.use(session({
     secret: 'secret',
@@ -113,7 +113,7 @@ app.post('/register', async (req, res) => {
     const contrasena = req.body.contrasena;
     let passwordHash = await bcryptjs.hash(contrasena, 8);
 
-    connection.query(
+    pool.query(
         'INSERT INTO usuario (correo, contrasena, idRol) VALUES (?, ?, ?)',
         [correo, passwordHash, 3], // 1 = Cliente
         (error, resultsUsuario) => {
@@ -133,7 +133,7 @@ app.post('/register', async (req, res) => {
             const idUsuario = resultsUsuario.insertId;
 
             // b. Insertar en Cliente
-            connection.query(
+            pool.query(
                 'INSERT INTO cliente (nombres, telefono, direccion, idUsuario) VALUES (?, ?, ?, ?)',
                 [nombres, telefono, direccion, idUsuario],
                 (error, resultsCliente) => {
@@ -176,7 +176,7 @@ app.post('/auth', async (req, res) => {
         });
     }
 
-    connection.query(
+    pool.query(
         `SELECT u.idUsuario, u.correo, u.contrasena, u.idRol, c.nombres
          FROM usuario u
          LEFT JOIN cliente c ON u.idUsuario = c.idUsuario
@@ -258,7 +258,7 @@ function isCliente(req, res, next) {
 app.get('/index_cliente', isCliente, (req, res) => {
     const sql = "SELECT idProducto, nombreProducto, descripcion, precio FROM producto ORDER BY idProducto DESC LIMIT 12";
 
-    connection.query(sql, (err, productos) => {
+    pool.query(sql, (err, productos) => {
         if (err) {
             console.error("Error consultando productos:", err);
             return res.status(500).send("Error en la consulta direccionando a index cliente de la DB");
@@ -300,11 +300,18 @@ app.get('/admin', isAdmin, (req, res) => {
     `;
 
     const sqlPedidos = `
-        SELECT idPedido, idCliente, fechaPedido, total, idMetodoPago, idEnvio
-        FROM pedido
-        ORDER BY idPedido DESC
-        LIMIT 10;
-    `;
+    SELECT p.idPedido,
+           p.fechaPedido,
+           p.total,
+           c.nombres AS cliente,
+           m.nombreMetodo AS metodoPago,
+           e.estado AS estadoEnvio
+    FROM pedido p
+    JOIN cliente c ON p.idCliente = c.idCliente
+    LEFT JOIN metodopago m ON p.idMetodoPago = m.idMetodoPago
+    LEFT JOIN envio e ON p.idEnvio = e.idEnvio
+    ORDER BY p.idPedido DESC
+`;
 
     const sqlEnvios = `
         SELECT idEnvio, direccionEnvio, ciudad, estado, codigoPostal, fechaEnvio
@@ -313,16 +320,16 @@ app.get('/admin', isAdmin, (req, res) => {
         LIMIT 10;
     `;
 
-    connection.query(sqlClientes, (errClientes, clientes) => {
+    pool.query(sqlClientes, (errClientes, clientes) => {
         if (errClientes) return res.status(500).send("Error en clientes");
 
-        connection.query(sqlProductos, (errProductos, productos) => {
+        pool.query(sqlProductos, (errProductos, productos) => {
             if (errProductos) return res.status(500).send("Error en productos");
 
-            connection.query(sqlPedidos, (errPedidos, pedidos) => {
+            pool.query(sqlPedidos, (errPedidos, pedidos) => {
                 if (errPedidos) return res.status(500).send("Error en pedidos");
 
-                connection.query(sqlEnvios, (errEnvios, envios) => {
+                pool.query(sqlEnvios, (errEnvios, envios) => {
                     if (errEnvios) return res.status(500).send("Error en envíos");
 
                     res.render('admin', {
@@ -330,7 +337,7 @@ app.get('/admin', isAdmin, (req, res) => {
                         productos: productos,
                         pedidos: pedidos,
                         envios: envios,
-                        alert: req.session.alert || null,
+                        alert: false || null,
                         alertTitle: req.session.alert ? req.session.alert.title : '',
                         alertMessage: req.session.alert ? req.session.alert.message : '',
                         alertIcon: req.session.alert ? req.session.alert.type : '',
@@ -358,14 +365,14 @@ app.get('/deleteUser/:idCliente', (req, res) => {
         WHERE c.idCliente = ?;
     `;
 
-    connection.query(sqlDelete, [IdDelCliente], (error, results) => {
+    pool.query(sqlDelete, [IdDelCliente], (error, results) => {
         if (error) {
             console.log(error);
             return res.redirect('/admin?error=1'); // se redirige con querystring
         }
 
         // Traer de nuevo la lista después de borrar
-        connection.query(
+        pool.query(
             `SELECT c.idCliente, c.nombres, c.telefono, c.direccion, u.correo, u.idRol
              FROM cliente c
              JOIN usuario u ON c.idUsuario = u.idUsuario
@@ -403,7 +410,7 @@ app.get('/updateUser/:idCliente', (req, res) => {
         WHERE c.idCliente = ?;
     `;
 
-    connection.query(sqlSelect, [IdDelCliente], (error, results) => {
+    pool.query(sqlSelect, [IdDelCliente], (error, results) => {
         if (error) {
             console.error("Error al obtener cliente:", error);
             return res.status(500).send("Error en la base de datos");
@@ -425,7 +432,7 @@ app.post('/update', (req, res) => {
     // 1. Buscar el idUsuario correspondiente al cliente
     const sqlFindUser = `SELECT idUsuario FROM Cliente WHERE idCliente = ?;`;
 
-    connection.query(sqlFindUser, [idCliente], (err, results) => {
+    pool.query(sqlFindUser, [idCliente], (err, results) => {
         if (err) {
             console.error("Error buscando idUsuario:", err.sqlMessage || err);
             return res.status(500).send("Error en la base de datos (buscando usuario)");
@@ -437,62 +444,77 @@ app.post('/update', (req, res) => {
 
         const idUsuario = results[0].idUsuario;
 
-        // 2. Iniciar transacción
-        connection.beginTransaction(err => {
+        // 2. Obtener una conexión del pool
+        pool.getConnection((err, connection) => {
             if (err) {
-                console.error("Error iniciando transacción:", err.sqlMessage || err);
-                return res.status(500).send("Error iniciando transacción");
+                console.error("Error obteniendo conexión del pool:", err);
+                return res.status(500).send("Error obteniendo conexión del pool");
             }
 
-            // 3. Update en Cliente
-            const sqlUpdateCliente = `
-                UPDATE cliente 
-                SET nombres = ?, telefono = ?, direccion = ?
-                WHERE idCliente = ?;
-            `;
-            connection.query(sqlUpdateCliente, [nombres, telefono, direccion, idCliente], (err) => {
+            // 3. Iniciar transacción
+            connection.beginTransaction(err => {
                 if (err) {
-                    return connection.rollback(() => {
-                        console.error("Error actualizando Cliente:", err.sqlMessage || err);
-                        res.status(500).send("Error actualizando Cliente");
-                    });
+                    connection.release();
+                    console.error("Error iniciando transacción:", err.sqlMessage || err);
+                    return res.status(500).send("Error iniciando transacción");
                 }
 
-                // 4. Update en Usuario
-                const sqlUpdateUsuario = `
-                    UPDATE usuario 
-                    SET correo = ?
-                    WHERE idUsuario = ?;
+                // 4. Update en Cliente
+                const sqlUpdateCliente = `
+                    UPDATE cliente 
+                    SET nombres = ?, telefono = ?, direccion = ?
+                    WHERE idCliente = ?;
                 `;
-                connection.query(sqlUpdateUsuario, [correo, idUsuario], (err) => {
+                connection.query(sqlUpdateCliente, [nombres, telefono, direccion, idCliente], (err) => {
                     if (err) {
                         return connection.rollback(() => {
-                            console.error("Error actualizando Usuario:", err.sqlMessage || err);
-                            res.status(500).send("Error actualizando Usuario");
+                            connection.release();
+                            console.error("Error actualizando Cliente:", err.sqlMessage || err);
+                            res.status(500).send("Error actualizando Cliente");
                         });
                     }
 
-                    // 5. Commit si todo fue exitoso
-                    connection.commit(err => {
+                    // 5. Update en Usuario
+                    const sqlUpdateUsuario = `
+                        UPDATE usuario 
+                        SET correo = ?
+                        WHERE idUsuario = ?;
+                    `;
+                    connection.query(sqlUpdateUsuario, [correo, idUsuario], (err) => {
                         if (err) {
                             return connection.rollback(() => {
-                                console.error("Error en commit:", err.sqlMessage || err);
-                                res.status(500).send("Error finalizando actualización");
+                                connection.release();
+                                console.error("Error actualizando Usuario:", err.sqlMessage || err);
+                                res.status(500).send("Error actualizando Usuario");
                             });
                         }
 
-                        // 6. Notificación al usuario
-                        req.session.alert = {
-                            type: 'success',
-                            title: 'Actualizado',
-                            message: 'El registro del cliente fue actualizado correctamente'
-                        };
+                        // 6. Commit si todo fue exitoso
+                        connection.commit(err => {
+                            if (err) {
+                                return connection.rollback(() => {
+                                    connection.release();
+                                    console.error("Error en commit:", err.sqlMessage || err);
+                                    res.status(500).send("Error finalizando actualización");
+                                });
+                            }
 
-                        if (req.session.rol === 1) {
-                            res.redirect('/admin');
-                        } else {
-                            res.redirect('/vendedor');
-                        }
+                            // Liberar conexión después del commit
+                            connection.release();
+
+                            // 7. Notificación al usuario
+                            req.session.alert = {
+                                type: 'success',
+                                title: 'Actualizado',
+                                message: 'El registro del cliente fue actualizado correctamente'
+                            };
+
+                            if (req.session.rol === 1) {
+                                res.redirect('/admin');
+                            } else {
+                                res.redirect('/vendedor');
+                            }
+                        });
                     });
                 });
             });
@@ -506,7 +528,7 @@ app.get('/updateProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
     const { idProducto } = req.params;
     const sql = "SELECT * FROM producto WHERE idProducto = ?";
 
-    connection.query(sql, [idProducto], (err, results) => {
+    pool.query(sql, [idProducto], (err, results) => {
         if (err) return res.status(500).send("Error en DB");
         if (results.length === 0) return res.status(404).send("Producto no encontrado");
 
@@ -525,7 +547,7 @@ app.post('/updateProducto', isVendedorOrAdmin, (req, res) => {
         SET nombreProducto = ?, descripcion = ?, precio = ?, idCategoria = ?
         WHERE idProducto = ?
     `;
-    connection.query(sql, [nombreProducto, descripcion, precio, idCategoria, idProducto], (err) => {
+    pool.query(sql, [nombreProducto, descripcion, precio, idCategoria, idProducto], (err) => {
         if (err) return res.status(500).send("Error actualizando producto");
 
         req.session.alert = {
@@ -546,7 +568,7 @@ app.get('/deleteProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
     const { idProducto } = req.params;
     const sql = "DELETE FROM producto WHERE idProducto = ?";
 
-    connection.query(sql, [idProducto], (err) => {
+    pool.query(sql, [idProducto], (err) => {
         if (err) return res.status(500).send("Error eliminando producto");
 
         req.session.alert = {
@@ -589,7 +611,7 @@ app.post('/addProducto', isVendedorOrAdmin, upload.single('imagen'), (req, res) 
         VALUES (?, ?, ?, ?, ?)
     `;
 
-    connection.query(sql, [nombreProducto, descripcion, precio, idCategoria, imagen], (err) => {
+    pool.query(sql, [nombreProducto, descripcion, precio, idCategoria, imagen], (err) => {
         if (err) {
             console.error("Error agregando producto:", err);
             return res.status(500).send("Error agregando producto");
@@ -614,13 +636,13 @@ app.post('/addProducto', isVendedorOrAdmin, upload.single('imagen'), (req, res) 
 // Editar pedido
 app.get('/updatePedido/:idPedido', isVendedorOrAdmin, (req, res) => {
     const { idPedido } = req.params;
-    const sql = "SELECT * FROM Pedido WHERE idPedido = ?";
+    const sql = "SELECT * FROM pedido WHERE idPedido = ?";
 
-    connection.query(sql, [idPedido], (err, results) => {
+    pool.query(sql, [idPedido], (err, results) => {
         if (err) return res.status(500).send("Error en DB");
         if (results.length === 0) return res.status(404).send("Pedido no encontrado");
 
-        res.render('updatePedido', { 
+        res.render('updatePedido', {
             data: results[0],
             rol: req.session.rol   // aquí mandamos el rol
         });
@@ -634,12 +656,12 @@ app.post('/updatePedido', isVendedorOrAdmin, (req, res) => {
     idEnvio = idEnvio || null;
 
     const sql = `
-        UPDATE Pedido
+        UPDATE pedido
         SET idCliente = ?, fechaPedido = ?, total = ?, idMetodoPago = ?, idEnvio = ?
         WHERE idPedido = ?
     `;
 
-    connection.query(sql, [idCliente, fechaPedido, total, idMetodoPago, idEnvio, idPedido], (err) => {
+    pool.query(sql, [idCliente, fechaPedido, total, idMetodoPago, idEnvio, idPedido], (err) => {
         if (err) {
             console.error("Error actualizando pedido:", err);
             return res.status(500).send("Error actualizando pedido");
@@ -664,29 +686,36 @@ app.post('/updatePedido', isVendedorOrAdmin, (req, res) => {
 // Eliminar pedido
 app.get('/deletePedido/:idPedido', isVendedorOrAdmin, (req, res) => {
     const { idPedido } = req.params;
-    const sql = "DELETE FROM Pedido WHERE idPedido = ?";
 
-    connection.query(sql, [idPedido], (err) => {
-        if (err) return res.status(500).send("Error eliminando pedido");
+    const sqlDeleteDetalles = "DELETE FROM pedidodetalle WHERE idPedido = ?";
+    const sqlDeletePedido = "DELETE FROM pedido WHERE idPedido = ?";
 
-        req.session.alert = {
-            type: 'success',
-            title: 'Pedido eliminado',
-            message: 'El pedido fue eliminado correctamente'
-        };
-        if (req.session.rol === 1) {
-            res.redirect('/admin');
-        } else {
-            res.redirect('/vendedor');
-        }
+    pool.query(sqlDeleteDetalles, [idPedido], (err) => {
+        if (err) return res.status(500).send("Error eliminando detalles");
+
+        pool.query(sqlDeletePedido, [idPedido], (err) => {
+            if (err) return res.status(500).send("Error eliminando pedido");
+
+            req.session.alert = {
+                type: 'success',
+                title: 'Pedido eliminado',
+                message: 'El pedido fue eliminado correctamente'
+            };
+
+            if (req.session.rol === 1) {
+                res.redirect('/admin');
+            } else {
+                res.redirect('/vendedor');
+            }
+        });
     });
 });
 // Editar envío
 app.get('/updateEnvio/:idEnvio', isVendedorOrAdmin, (req, res) => {
     const { idEnvio } = req.params;
-    const sql = "SELECT * FROM Envio WHERE idEnvio = ?";
+    const sql = "SELECT * FROM envio WHERE idEnvio = ?";
 
-    connection.query(sql, [idEnvio], (err, results) => {
+    pool.query(sql, [idEnvio], (err, results) => {
         if (err) return res.status(500).send("Error en DB");
         if (results.length === 0) return res.status(404).send("Envío no encontrado");
 
@@ -697,11 +726,11 @@ app.get('/updateEnvio/:idEnvio', isVendedorOrAdmin, (req, res) => {
 app.post('/updateEnvio', isVendedorOrAdmin, (req, res) => {
     const { direccionEnvio, ciudad, estado, codigoPostal, fechaEnvio, idEnvio } = req.body;
     const sql = `
-        UPDATE Envio
+        UPDATE envio
         SET direccionEnvio = ?, ciudad = ?, estado = ?, codigoPostal = ?, fechaEnvio = ?
         WHERE idEnvio = ?
     `;
-    connection.query(sql, [direccionEnvio, ciudad, estado, codigoPostal, fechaEnvio, idEnvio], (err) => {
+    pool.query(sql, [direccionEnvio, ciudad, estado, codigoPostal, fechaEnvio, idEnvio], (err) => {
         if (err) return res.status(500).send("Error actualizando envío");
 
         req.session.alert = {
@@ -716,9 +745,9 @@ app.post('/updateEnvio', isVendedorOrAdmin, (req, res) => {
 // Eliminar envío
 app.get('/deleteEnvio/:idEnvio', isVendedorOrAdmin, (req, res) => {
     const { idEnvio } = req.params;
-    const sql = "DELETE FROM Envio WHERE idEnvio = ?";
+    const sql = "DELETE FROM envio WHERE idEnvio = ?";
 
-    connection.query(sql, [idEnvio], (err) => {
+    pool.query(sql, [idEnvio], (err) => {
         if (err) return res.status(500).send("Error eliminando envío");
 
         req.session.alert = {
@@ -747,17 +776,31 @@ app.get('/vendedor', (req, res) => {
     `;
 
     const sqlPedidos = `
-        SELECT idPedido, idCliente, fechaPedido, total, idMetodoPago, idEnvio
-        FROM Pedido
-        ORDER BY idPedido DESC
+        SELECT p.idPedido,
+               c.nombres AS cliente,
+               p.fechaPedido,
+               p.total,
+               m.nombreMetodo AS metodoPago,
+               e.estado AS estadoEnvio
+        FROM pedido p
+        JOIN cliente c ON p.idCliente = c.idCliente
+        LEFT JOIN metodopago m ON p.idMetodoPago = m.idMetodoPago
+        LEFT JOIN envio e ON p.idEnvio = e.idEnvio
+        ORDER BY p.idPedido DESC
         LIMIT 10;
     `;
 
-    connection.query(sqlProductos, (errProductos, productos) => {
-        if (errProductos) return res.status(500).send("Error en productos");
+    pool.query(sqlProductos, (errProductos, productos) => {
+        if (errProductos) {
+            console.error("Error en productos:", errProductos.sqlMessage);
+            return res.status(500).send("Error en productos");
+        }
 
-        connection.query(sqlPedidos, (errPedidos, pedidos) => {
-            if (errPedidos) return res.status(500).send("Error en pedidos");
+        pool.query(sqlPedidos, (errPedidos, pedidos) => {
+            if (errPedidos) {
+                console.error("Error en pedidos:", errPedidos.sqlMessage);
+                return res.status(500).send("Error en pedidos");
+            }
 
             res.render('vendedor', {
                 productos: productos,
@@ -775,16 +818,18 @@ app.get('/vendedor', (req, res) => {
         });
     });
 });
+
 //recepcion de carrito del front end
 
 // Registrar un pedido
+// Registrar un pedido
 app.post('/api/pedido', (req, res) => {
-    if (!req.session.loggedin || req.session.rol !== 3) { // 3 = cliente
+    if (!req.session.loggedin || req.session.rol !== 3) {
         return res.status(401).json({ error: 'Debes iniciar sesión como cliente' });
     }
 
     const carrito = req.body.carrito;
-    const idCliente = req.session.userId; // ya lo guardaste en la sesión
+    const idUsuario = req.session.userId; // <- aquí tenemos el usuario
     let total = 0;
 
     carrito.forEach(item => {
@@ -792,32 +837,49 @@ app.post('/api/pedido', (req, res) => {
         total += precioNum * item.cantidad;
     });
 
-    // 1. Insertar pedido
-    const sqlPedido = "INSERT INTO Pedido (idCliente, total) VALUES (?, ?)";
-    connection.query(sqlPedido, [idCliente, total], (err, result) => {
+    // 1. Buscar el idCliente correspondiente al idUsuario
+    const sqlGetCliente = "SELECT idCliente FROM cliente WHERE idUsuario = ?";
+    pool.query(sqlGetCliente, [idUsuario], (err, results) => {
         if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Error creando pedido' });
+            console.error("Error obteniendo idCliente:", err.sqlMessage);
+            return res.status(500).json({ error: 'Error buscando cliente' });
+        }
+        if (results.length === 0) {
+            return res.status(400).json({ error: 'No se encontró cliente para este usuario' });
         }
 
-        const idPedido = result.insertId;
+        const idCliente = results[0].idCliente;
 
-        // 2. Insertar detalles
-        const sqlDetalle = "INSERT INTO pedidodetalle (idPedidoDetalle, idPedido, idProducto, cantidad, precioUnitario) VALUES ?";
-        const values = carrito.map(item => [
-            idPedido,
-            item.id, // ojo: este `id` debe coincidir con Producto.idProducto
-            item.cantidad,
-            parseFloat(item.precio.replace(/[^0-9.-]+/g, ""))
-        ]);
-
-        connection.query(sqlDetalle, [values], (err) => {
+        // 2. Insertar pedido
+        const sqlPedido = "INSERT INTO pedido (idCliente, total) VALUES (?, ?)";
+        pool.query(sqlPedido, [idCliente, total], (err, result) => {
             if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Error guardando detalles' });
+                console.error("Error creando pedido:", err.sqlMessage);
+                return res.status(500).json({ error: 'Error creando pedido' });
             }
 
-            res.json({ success: true, idPedido });
+            const idPedido = result.insertId;
+
+            // 3. Insertar detalles
+            const sqlDetalle = `
+                INSERT INTO pedidodetalle (idPedido, idProducto, cantidad, precioUnitario)
+                VALUES ?
+            `;
+            const values = carrito.map(item => [
+                idPedido,
+                item.id,
+                item.cantidad,
+                parseFloat(item.precio.replace(/[^0-9.-]+/g, ""))
+            ]);
+
+            pool.query(sqlDetalle, [values], (err) => {
+                if (err) {
+                    console.error("Error guardando detalles:", err.sqlMessage);
+                    return res.status(500).json({ error: 'Error guardando detalles' });
+                }
+
+                res.json({ success: true, idPedido });
+            });
         });
     });
 });

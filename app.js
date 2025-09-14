@@ -12,7 +12,7 @@ dotenv.config({ path: './env/.env' });
 
 //4. el directorio public middleware
 app.use('', express.static('public'));
-app.use('', express.static(__dirname + '/public')); 1
+app.use('', express.static(__dirname + '/public')); 
 
 //middlewares para sessiones
 
@@ -39,7 +39,6 @@ function isVendedorOrAdmin(req, res, next) {
         res.status(403).send("Acceso denegado: solo vendedores o admin");
     }
 }
-
 
 //5. establecer motor de plantilla
 app.set('view engine', 'ejs');
@@ -158,57 +157,74 @@ app.post('/register', async (req, res) => {
 })
 
 //11.autentificacion
-connection.query(
-    `SELECT u.idUsuario, u.correo, u.contrasena, u.idRol, c.nombres
-     FROM usuario u
-     LEFT JOIN cliente c ON u.idUsuario = c.idUsuario
-     WHERE u.correo = ?`,
-    [correo],
-    async (error, results) => {
-        if (error) {
-            console.log("Error en la consulta:", error.sqlMessage);
-            return res.status(500).send('Error en la consulta a la DB');
-        }
+app.post('/auth', async (req, res) => {
+    const correo = req.body.correo;
+    const pass = req.body.pass;
 
-        if (results.length === 0 || !(await bcryptjs.compare(pass, results[0].contrasena))) {
-            return res.render('login', {
-                alert: true,
-                alertTitle: "Error",
-                alertMessage: "Usuario y/o Contraseña Incorrecta",
-                alertIcon: "error",
-                showConfirmButton: true,
-                timer: 2000,
-                ruta: 'login'
-            });
-        }
-
-        // Guardar datos en sesión
-        req.session.loggedin = true;
-        req.session.userId = results[0].idUsuario;
-        req.session.name = results[0].nombres || results[0].correo; // si no tiene cliente, usamos correo
-        req.session.rol = results[0].idRol;
-
-        // Definir ruta según el rol
-        let rutaDestino = '';
-        if (req.session.rol === 1) {
-            rutaDestino = 'admin';
-        } else if (req.session.rol === 2) {
-            rutaDestino = 'vendedor';
-        } else {
-            rutaDestino = 'index_cliente';
-        }
-
+    if (!correo || !pass) {
         return res.render('login', {
             alert: true,
-            alertTitle: "Conexión Exitosa",
-            alertMessage: "Ingresando...",
-            alertIcon: "success",
-            showConfirmButton: false,
-            timer: 3000,
-            ruta: rutaDestino
+            alertTitle: "Advertencia",
+            alertMessage: "Favor ingresar correo y contraseña",
+            alertIcon: "warning",
+            showConfirmButton: true,
+            timer: false,
+            ruta: 'login'
         });
     }
-);
+
+    connection.query(
+        `SELECT u.idUsuario, u.correo, u.contrasena, u.idRol, c.nombres
+         FROM usuario u
+         LEFT JOIN cliente c ON u.idUsuario = c.idUsuario
+         WHERE u.correo = ?`,
+        [correo],
+        async (error, results) => {
+            if (error) {
+                console.log("Error en la consulta:", error.sqlMessage);
+                return res.status(500).send('Error en la consulta a la DB');
+            }
+
+            if (results.length === 0 || !(await bcryptjs.compare(pass, results[0].contrasena))) {
+                return res.render('login', {
+                    alert: true,
+                    alertTitle: "Error",
+                    alertMessage: "Usuario y/o Contraseña Incorrecta",
+                    alertIcon: "error",
+                    showConfirmButton: true,
+                    timer: 2000,
+                    ruta: 'login'
+                });
+            }
+
+            // Guardar datos en sesión
+            req.session.loggedin = true;
+            req.session.userId = results[0].idUsuario;
+            req.session.name = results[0].nombres || results[0].correo;
+            req.session.rol = results[0].idRol;
+
+            // Definir ruta según el rol
+            let rutaDestino = '';
+            if (req.session.rol === 1) {
+                rutaDestino = 'admin';
+            } else if (req.session.rol === 2) {
+                rutaDestino = 'vendedor';
+            } else {
+                rutaDestino = 'index_cliente';
+            }
+
+            return res.render('login', {
+                alert: true,
+                alertTitle: "Conexión Exitosa",
+                alertMessage: "Ingresando...",
+                alertIcon: "success",
+                showConfirmButton: false,
+                timer: 3000,
+                ruta: rutaDestino
+            });
+        }
+    );
+});
 
 
 
@@ -227,6 +243,33 @@ app.get('/', (req, res) => {
         });
     };
 });
+
+function isCliente(req, res, next) {
+    if (req.session.loggedin && req.session.rol === 3) {
+        return next();
+    }
+    res.redirect('/login');
+}
+
+// Ruta para index_cliente
+app.get('/index_cliente', isCliente, (req, res) => {
+    const sql = "SELECT idProducto, nombreProducto, descripcion, precio FROM Producto ORDER BY idProducto DESC LIMIT 12";
+    
+    connection.query(sql, (err, productos) => {
+        if (err) {
+            console.error("Error consultando productos:", err);
+            return res.status(500).send("Error en la consulta a la DB");
+        }
+
+        res.render('index_cliente', {
+            login: true,
+            name: req.session.name,
+            productos: productos
+        });
+        
+    });
+});
+
 
 //13. logout
 app.get('/logout', (req, res) => {

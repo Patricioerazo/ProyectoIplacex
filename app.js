@@ -797,7 +797,7 @@ app.post('/api/pedido', (req, res) => {
         const idPedido = result.insertId;
 
         // 2. Insertar detalles
-        const sqlDetalle = "INSERT INTO DetallePedido (idPedido, idProducto, cantidad, precio) VALUES ?";
+        const sqlDetalle = "INSERT INTO pedidodetalle (idPedidoDetalle, idProducto, cantidad, precioUnitario) VALUES ?";
         const values = carrito.map(item => [
             idPedido,
             item.id, // ojo: este `id` debe coincidir con Producto.idProducto

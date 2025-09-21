@@ -17,6 +17,17 @@ app.use('', express.static(__dirname + '/public'));
 const multer = require('multer');
 const path = require('path');
 
+// Configuración de almacenamiento
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/img/'); // carpeta donde guardarás las imágenes
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // nombre único
+    }
+});
+
+const upload = multer({ storage: storage });
 //middlewares para sessiones
 
 function isLoggedIn(req, res, next) {
@@ -234,18 +245,28 @@ app.post('/auth', async (req, res) => {
 //12. atenticación de pagina index
 
 app.get('/', (req, res) => {
-    if (req.session.loggedin) {
-        res.render('index', {
-            login: true,
-            name: req.session.name   // debe ser .name
-        });
-    } else {
-        res.render('index', {
-            login: false,
-            name: 'Puede Iniciar Sesion'
-        });
-    };
+    pool.query("SELECT * FROM producto", (err, resultados) => {
+        if (err) {
+            console.error("Error al obtener productos:", err);
+            return res.status(500).send("Error al cargar productos");
+        }
+
+        if (req.session.loggedin) {
+            res.render('index', {
+                login: true,
+                name: req.session.name,
+                productos: resultados
+            });
+        } else {
+            res.render('index', {
+                login: false,
+                name: 'Puede Iniciar Sesion',
+                productos: resultados
+            });
+        }
+    });
 });
+
 
 function isCliente(req, res, next) {
     if (req.session.loggedin && req.session.rol === 3) {
@@ -256,7 +277,7 @@ function isCliente(req, res, next) {
 
 // Ruta para index_cliente
 app.get('/index_cliente', isCliente, (req, res) => {
-    const sql = "SELECT idProducto, nombreProducto, descripcion, precio FROM producto ORDER BY idProducto DESC LIMIT 12";
+    const sql = "SELECT idProducto, nombreProducto, descripcion, precio, imagen FROM producto ORDER BY idProducto DESC LIMIT 12";
 
     pool.query(sql, (err, productos) => {
         if (err) {
@@ -331,21 +352,22 @@ app.get('/admin', isAdmin, (req, res) => {
 
                 pool.query(sqlEnvios, (errEnvios, envios) => {
                     if (errEnvios) return res.status(500).send("Error en envíos");
-
+                    const alert = req.session.alert || null;
+                    req.session.alert = null;
                     res.render('admin', {
                         people: clientes,
-                        productos: productos,
-                        pedidos: pedidos,
-                        envios: envios,
-                        alert: false || null,
-                        alertTitle: req.session.alert ? req.session.alert.title : '',
-                        alertMessage: req.session.alert ? req.session.alert.message : '',
-                        alertIcon: req.session.alert ? req.session.alert.type : '',
+                        productos,
+                        pedidos,
+                        envios,
+                        alert,
+                        alertTitle: alert ? alert.title : '',
+                        alertMessage: alert ? alert.message : '',
+                        alertIcon: alert ? alert.type : '',
                         showConfirmButton: false,
                         timer: 2000,
                         ruta: 'admin'
                     });
-                    req.session.alert = null; // limpiar alert
+
                 });
             });
         });
@@ -354,48 +376,39 @@ app.get('/admin', isAdmin, (req, res) => {
 
 
 
+
 //15. eliminacion con admin
-app.get('/deleteUser/:idCliente', (req, res) => {
-    const IdDelCliente = req.params.idCliente;
+app.get('/deleteUser/:id', (req, res) => {
+    const idCliente = req.params.id;
 
-    const sqlDelete = `
-        DELETE u, c
-        FROM usuario u
-        JOIN cliente c ON u.idUsuario = c.idUsuario
-        WHERE c.idCliente = ?;
-    `;
+    pool.query("DELETE FROM cliente WHERE idCliente = ?", [idCliente], (err, results) => {
+        if (err) {
+            console.error("Error al eliminar cliente:", err.sqlMessage || err);
 
-    pool.query(sqlDelete, [IdDelCliente], (error, results) => {
-        if (error) {
-            console.log(error);
-            return res.redirect('/admin?error=1'); // se redirige con querystring
+            if (err.errno === 1451) {
+                req.session.alert = {
+                    title: "No se puede eliminar",
+                    message: "El cliente tiene pedidos o registros asociados",
+                    type: "warning"
+                };
+                return res.redirect('/admin');
+            }
+
+            req.session.alert = {
+                title: "Error en la operación",
+                message: "No fue posible eliminar el cliente",
+                type: "error"
+            };
+            return res.redirect('/admin');
         }
 
-        // Traer de nuevo la lista después de borrar
-        pool.query(
-            `SELECT c.idCliente, c.nombres, c.telefono, c.direccion, u.correo, u.idRol
-             FROM cliente c
-             JOIN usuario u ON c.idUsuario = u.idUsuario
-             ORDER BY c.idCliente DESC
-             LIMIT 10`,
-            (err, results) => {
-                if (err) {
-                    console.error("Error en la base de datos:", err);
-                    return res.status(500).send("Error en la base de datos");
-                }
-
-                res.render('admin', {
-                    people: results,
-                    alert: true,
-                    alertTitle: "Eliminado",
-                    alertMessage: "Cliente eliminado correctamente",
-                    alertIcon: "success",
-                    showConfirmButton: false,
-                    timer: 2000,
-                    ruta: 'admin'
-                });
-            }
-        );
+        // Si borra OK
+        req.session.alert = {
+            title: "Cliente eliminado",
+            message: "El cliente fue eliminado correctamente",
+            type: "success"
+        };
+        res.redirect('/admin');
     });
 });
 
@@ -540,14 +553,29 @@ app.get('/updateProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
 });
 
 // Actualizar producto
-app.post('/updateProducto', isVendedorOrAdmin, (req, res) => {
+app.post('/updateProducto', isVendedorOrAdmin, upload.single('imagen'), (req, res) => {
     const { idProducto, nombreProducto, descripcion, precio, idCategoria } = req.body;
-    const sql = `
-        UPDATE producto 
-        SET nombreProducto = ?, descripcion = ?, precio = ?, idCategoria = ?
-        WHERE idProducto = ?
-    `;
-    pool.query(sql, [nombreProducto, descripcion, precio, idCategoria, idProducto], (err) => {
+
+    // Si subió una nueva imagen, usamos esa, si no mantenemos la actual
+    let sql, params;
+    if (req.file) {
+        const nuevaImagen = '/img/' + req.file.filename;
+        sql = `
+            UPDATE producto 
+            SET nombreProducto = ?, descripcion = ?, precio = ?, idCategoria = ?, imagen = ?
+            WHERE idProducto = ?
+        `;
+        params = [nombreProducto, descripcion, precio, idCategoria, nuevaImagen, idProducto];
+    } else {
+        sql = `
+            UPDATE producto 
+            SET nombreProducto = ?, descripcion = ?, precio = ?, idCategoria = ?
+            WHERE idProducto = ?
+        `;
+        params = [nombreProducto, descripcion, precio, idCategoria, idProducto];
+    }
+
+    pool.query(sql, params, (err) => {
         if (err) return res.status(500).send("Error actualizando producto");
 
         req.session.alert = {
@@ -555,6 +583,7 @@ app.post('/updateProducto', isVendedorOrAdmin, (req, res) => {
             title: 'Producto actualizado',
             message: 'El producto fue editado correctamente'
         };
+
         if (req.session.rol === 1) {
             res.redirect('/admin');
         } else {
@@ -587,24 +616,14 @@ app.get('/deleteProducto/:idProducto', isVendedorOrAdmin, (req, res) => {
 });
 // Guardar nuevo producto 
 
-// Configuración de almacenamiento
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'public/img/'); // carpeta donde guardarás las imágenes
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname)); // nombre único
-    }
-});
 
-const upload = multer({ storage: storage });
 
 app.get('/addProducto', isVendedorOrAdmin, (req, res) => {
     res.render('addProducto.ejs', { rol: req.session.rol });
 });
 app.post('/addProducto', isVendedorOrAdmin, upload.single('imagen'), (req, res) => {
     const { nombreProducto, descripcion, precio, idCategoria } = req.body;
-    const imagen = req.file ? '/uploads/' + req.file.filename : null;
+    const imagen = req.file ? '/img/' + req.file.filename : null;
 
     const sql = `
         INSERT INTO producto (nombreProducto, descripcion, precio, idCategoria, imagen)
@@ -867,7 +886,7 @@ app.post('/api/pedido', (req, res) => {
             `;
             const values = carrito.map(item => [
                 idPedido,
-                item.id,
+                parseInt(item.id),
                 item.cantidad,
                 parseFloat(item.precio.replace(/[^0-9.-]+/g, ""))
             ]);

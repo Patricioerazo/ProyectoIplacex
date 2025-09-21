@@ -10,13 +10,13 @@
 <body>
     <section class="form-Registro">
         <h4>Agregar Producto</h4>
-        <form action="/addProducto" method="post">
+        <form action="/addProducto" method="post" enctype="multipart/form-data">
          <label>Nombre</label><input class="controls" type="text" name="nombreProducto" id="nombreProducto" required> 
         <label>Descripción</label><input class="controls" type="text" name="descripcion" id="descripcion" required>
         <label>Precio</label><input class="controls" type="number" step="500"  name="precio" id="precio" >
         <label>Categoría</label><input class="controls" type="number" name="idCategoria" id="idCategoria" >
         <br>
-         label>Imagen</label><input class="controls" type="file" name="imagen" id="imagen" accept="image/*">
+         <label>Imagen</label><input class="controls" type="file" name="imagen" id="imagen" accept="image/*">
         <input class="u-full-width button-primary button input agregar-carrito" type="submit" value="Guardar">
         <a href="<%= rol === 1 ? '/admin' : '/vendedor' %>" class="u-full-width button-primary button input agregar-carrito">Cancelar</a>
         </form>

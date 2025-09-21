@@ -302,12 +302,12 @@ ul {
 .card h4 {
     margin-bottom: 5px;
 }
-.info-card .precio {
+.info-card .precio-original {
     text-decoration: line-through;
     font-size: 18px;
     margin-top: 10px;
 }
-.info-card .precio span {
+.info-card .precio-original span {
     font-weight: 700;
     font-size: 22px;
 }
@@ -631,11 +631,11 @@ hr {
   border-top: 1px solid #E1E1E1; }
 
 .container:after,
-.row:after,
-.u-cf {
+.row:after{
   content: "";
   display: table;
-  clear: both; }
+  clear: both; 
+}
 
 @media (min-width: 400px) {}
 
@@ -676,4 +676,78 @@ hr {
   .colend-md-7, .colend-md-5 {
     width: 100%;
   }
+}
+/* Forzar layout de productos en grilla */
+#productos .row {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr); /* siempre 3 columnas en desktop */
+  gap: 20px; /* espacio entre productos */
+  margin: 0 !important; /* anula márgenes de Skeleton */
+}
+
+#productos .four.columns {
+  float: none !important;      /* desactiva float */
+  width: 100% !important;      /* cada item ocupa toda la celda del grid */
+  margin-left: 0 !important;   /* elimina los márgenes de Skeleton */
+}
+
+#productos .card {
+  height: 100%;                /* todas las tarjetas igual altura */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Adaptación responsive */
+@media (max-width: 900px) {
+  #productos .row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  #productos .row {
+    grid-template-columns: 1fr;
+  }
+}
+/* Precio normal */
+#productos .precio-final {
+  font-size: 2rem;   /* más grande */
+  font-weight: bold;
+  color: #e60000;    /* rojo llamativo */
+}
+
+/* Precio tachado (original) */
+#productos .precio-original {
+  font-size: 1.6rem;  /* un poco más grande */
+  color: gray;
+  margin-right: 10px; /* espacio antes del precio final */
+}
+
+
+.footer {
+    background: linear-gradient(to right, #e7eb06, #e44e52); /* igual que la barra */
+    padding: 40px 0;
+    color: white;
+    text-align: center;
+}
+
+.footer .row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.footer .menu a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    margin: 10px 0;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
+.footer .menu a:hover {
+    color: #ffe082; /* tono amarillo claro al pasar el mouse */
 }

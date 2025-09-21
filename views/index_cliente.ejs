@@ -90,211 +90,66 @@
     </div>
 
     </div>
-    <div id="lista-cursos" class="container">
+    <div id="lista-cursos" class="container"> -->
         <h4 id="encabezado" class="encabezado decora-text">Juegos Interactivos</h4>
         <h6 class="decora-h6">"Antes de comenzar tu aventura educativa, queremos contarte que también tenemos juegos
             interactivos
             especialmente diseñados para seguir aprendiendo mientras te diviertes. Cada juego complementa y te permite
             practicar de manera entretenida, segura y guiada. ¡Descubre nuestra colección y convierte cada momento en
             una experiencia de aprendizaje!"</h6>
-        <div id="productos" class="container">
-
-            <div class="row">
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/bloques_colores.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Bloques en Madera de Colores</h4>
-                            <p>Edad: 3+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$4000 <span class="u-pull-right ">$2500</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="1">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/arcoiris_animales.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Arcoíris de Animalitos</h4>
-                            <p>Edad: 3+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$3500<span class="u-pull-right ">$2000</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="2">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/buho_musical.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Búho Musical Multifunción</h4>
-                            <p>Edad: 3+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$6500<span class="u-pull-right ">$3500</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="3">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <div class="row">
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/bloques_magneticos_154.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Bloques Magnéticos – 154 pcs</h4>
-                            <p>Edad: 5+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$8000<span class="u-pull-right ">$6500</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="4">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/bloques_magneticos.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Bloques Magnéticos – 96 pcs</h4>
-                            <p>Edad: 5+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$6500<span class="u-pull-right ">$5500</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="5">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/bloques_camion_12_en_1.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Bloques de Bombero Brigada Fire</h4>
-                            <p>Edad: 8+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$2000 <span class="u-pull-right ">$15000</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="6">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
 
-            <div class="row">
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/cubo.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Cubo Soma x2500 pcs</h4>
-                            <p>Edad: 8+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$12000<span class="u-pull-right ">$10000</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="7">Agregar
-                                Al Carrito</a>
+    </div>
+
+    <div id="productos" class="container">
+        <div class="row">
+            <% if (productos && productos.length> 0) { %>
+                <% productos.forEach(producto=> { %>
+                    <div class="four columns">
+                        <div class="card">
+                            <img src="<%= producto.imagen %>" class="imagen-curso u-full-width" width="90">
+                            <div class="info-card">
+                                <h4>
+                                    <%= producto.nombreProducto %>
+                                </h4>
+                                <p>
+                                    <%= producto.descripcion %>
+                                </p>
+                                <img src="/img/estrellas.png">
+                                <p class="precio">
+                                    <% if (Math.random()> 0.5) { %>
+                                        <span class="precio-original"
+                                            style="text-decoration: line-through; color: gray;">
+                                            $<%= producto.precio + 2000 %>
+                                        </span>
+                                        <span class="precio-final u-pull-right" style="color: red; font-weight: bold;">
+                                            $<%= producto.precio %>
+                                        </span>
+                                        <% } else { %>
+                                            <span class="precio-final u-pull-right">
+                                                $<%= producto.precio %>
+                                            </span>
+                                            <% } %>
+                                </p>
+                                <a href="#" class="u-full-width button-primary button input agregar-carrito"
+                                    data-id="<%= producto.idProducto %>">
+                                    Agregar Al Carrito
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/multi_cubo_8_en_1.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Cubo Multifunción 8 en 1</h4>
-                            <p>Edad: 5+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$12000<span class="u-pull-right ">$10000</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="8">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/cubos_apilables.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Cubo Apilable con fichas de encaje</h4>
-                            <p>Edad: 5+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$9500<span class="u-pull-right ">$8500</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="9">Agregar
-                                Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-            </div> <!--.row-->
-            <div class="row">
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/domino_acrilico.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Dominó Acrílico de Animalitos</h4>
-                            <p>Edad: 5+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$5000<span class="u-pull-right ">$4500</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="10">Agregar Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/tiendita.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Juego didáctico La Tiendita</h4>
-                            <p>Edad: 8+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$14000<span class="u-pull-right ">$12000</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="11">Agregar Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="four columns">
-                    <div class="card">
-                        <img src="/img/maracas.jpg" class="imagen-curso u-full-width">
-                        <div class="info-card">
-                            <h4>Instrumento Musical Maracas de madera</h4>
-                            <p>Edad: 3+</p>
-                            <img src="/img/estrellas.png">
-                            <p class="precio">$6000<span class="u-pull-right ">$5000</span></p>
-                            <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                data-id="12">Agregar Al Carrito</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <% }) %>
+                        <% } else { %>
+                            <p>No hay productos disponibles.</p>
+                            <% } %>
         </div>
-
-
-
-
     </div>
 
 
 
 
 
-
-
-
-
-
-
-
-
-    <div id="lista-cursos" class="container">
+    <div id="videos" class="container">
         <h4 id="encabezado" class="encabezado decora-text">Videos Educativos</h4>
         <h6 class="decora-h6">"¡Hola! 👋 Antes de empezar, recuerda que este es un espacio para aprender y divertirte de
             forma
@@ -353,7 +208,7 @@
     </div>
     </div>
 
-    <div id="lista-cursos" class="container">
+    <div id="consejos" class="container">
         <h4 id="encabezado" class="encabezado decora-text">Consejos Para Padres</h4>
         <h6 class="decora-h6">Ayuda a tus hijos a tener una relación saludable con la tecnología siguiendo estas
             recomendaciones
@@ -404,44 +259,27 @@
 
 
     <footer id="footer" class="footer">
-
-
         <div class="container">
             <div class="row">
                 <div class="four columns">
-                    <nav id="principal" class="menu">
-                        <br>
-                        <br>
-                        <br>
-                        <a class="enlace" href="#">Para tu Negocio</a>
+                    <h5>Para tu Negocio</h5>
+                    <nav class="menu">
                         <a class="enlace" href="#">Ventas por Mayor</a>
-                        <br>
-                        <br>
-                        <br>
+                        <a class="enlace" href="#">Empresas Asociadas</a>
                     </nav>
                 </div>
                 <div class="four columns">
-                    <nav id="secundaria" class="menu">
-                        <br>
-                        <br>
-                        <br>
-                        <a class="enlace" href="#">¿Quienes Somos?</a>
+                    <h5>Información</h5>
+                    <nav class="menu">
+                        <a class="enlace" href="#">¿Quiénes Somos?</a>
                         <a class="enlace" href="#">Despacho de Productos</a>
-                        <br>
-                        <br>
-                        <br>
                     </nav>
                 </div>
                 <div class="four columns">
-                    <nav id="secundaria" class="menu">
-                        <br>
-                        <br>
-                        <br>
-                        <a class="enlace" href="#">Soporte</a>
-                        <a class="enlace" href="#">Contactanos</a>
-                        <br>
-                        <br>
-                        <br>
+                    <h5>Soporte</h5>
+                    <nav class="menu">
+                        <a class="enlace" href="#">Ayuda</a>
+                        <a class="enlace" href="#">Contáctanos</a>
                     </nav>
                 </div>
             </div>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe de Ventas</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+    <header>
+        <h2 class="encabezado decora-text">Informe de Ventas</h2>
+       
+    </header>
+
+    <div class="container">
+        <table>
+            <thead>
+                <tr class="decora-h6">
+                    <th>ID Pedido</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Método de Pago</th>
+                    <th>Estado Envío</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (pedidos && pedidos.length> 0) { %>
+                    <% pedidos.forEach((p)=> { %>
+                        <tr>
+                            <td>
+                                <%= p.idPedido %>
+                            </td>
+                            <td>
+                                <%= p.cliente %>
+                            </td>
+                            <td>
+                                <%= p.fechaPedido.toISOString().slice(0,10) %>
+                            </td>
+                            <td>$<%= p.total %>
+                            </td>
+                            <td>
+                                <%= p.metodoPago || "No registrado" %>
+                            </td>
+                            <td>
+                                <%= p.estadoEnvio || "Pendiente" %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6">No hay pedidos registrados</td>
+
+                                </tr>
+                                <% } %>
+            </tbody>
+
+        </table>
+        <a href="/informeVentas/pdf" class="u-full-width button-primary button input">
+            Descargar Informe PDF
+        </a>
+         <a href="/admin" class="u-full-width button-primary button input">Volver</a>
+    </div>
+</body>
+
+</html>

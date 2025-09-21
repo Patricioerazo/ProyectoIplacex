@@ -102,49 +102,48 @@
             una experiencia de aprendizaje!"</h5><br>
 
 
-        <div id="productos" class="container">
-            <div class="row">
-                <% if (productos && productos.length> 0) { %>
-                    <% productos.forEach(producto=> { %>
-                        <div class="four columns">
-                            <div class="card">
-                                <img src="<%= producto.imagen %>" class="imagen-curso u-full-width" width="90">
-                                <div class="info-card">
-                                    <h4>
-                                        <%= producto.nombreProducto %>
-                                    </h4>
-                                    <p>
-                                        <%= producto.descripcion %>
-                                    </p>
-                                    <img src="/img/estrellas.png">
-                                    <p class="precio">
-                                        <% if (Math.random()> 0.5) { %>
-                                            <span class="precio-original"
-                                                style="text-decoration: line-through; color: gray;">
-                                                $<%= producto.precio + 2000 %>
-                                            </span>
-                                            <span class="precio-final u-pull-right"
-                                                style="color: red; font-weight: bold;">
+
+        <div class="row">
+            <% if (productos && productos.length> 0) { %>
+                <% productos.forEach(producto=> { %>
+                    <div class="four columns">
+                        <div class="card">
+                            <img src="<%= producto.imagen %>" class="imagen-curso u-full-width" width="90">
+                            <div class="info-card">
+                                <h4>
+                                    <%= producto.nombreProducto %>
+                                </h4>
+                                <p>
+                                    <%= producto.descripcion %>
+                                </p>
+                                <img src="/img/estrellas.png">
+                                <p class="precio">
+                                    <% if (Math.random()> 0.5) { %>
+                                        <span class="precio-original"
+                                            style="text-decoration: line-through; color: gray;">
+                                            $<%= producto.precio + 2000 %>
+                                        </span>
+                                        <span class="precio-final u-pull-right" style="color: red; font-weight: bold;">
+                                            $<%= producto.precio %>
+                                        </span>
+                                        <% } else { %>
+                                            <span class="precio-final u-pull-right">
                                                 $<%= producto.precio %>
                                             </span>
-                                            <% } else { %>
-                                                <span class="precio-final u-pull-right">
-                                                    $<%= producto.precio %>
-                                                </span>
-                                                <% } %>
-                                    </p>
-                                    <a href="#" class="u-full-width button-primary button input agregar-carrito"
-                                        data-id="<%= producto.idProducto %>">
-                                        Agregar Al Carrito
-                                    </a>
-                                </div>
+                                            <% } %>
+                                </p>
+                                <a href="#" class="u-full-width button-primary button input agregar-carrito"
+                                    data-id="<%= producto.idProducto %>">
+                                    Agregar Al Carrito
+                                </a>
                             </div>
                         </div>
-                        <% }) %>
-                            <% } else { %>
-                                <p>No hay productos disponibles.</p>
-                                <% } %>
-            </div>
+                    </div>
+                    <% }) %>
+                        <% } else { %>
+                            <p>No hay productos disponibles.</p>
+                            <% } %>
+
         </div>
 
 

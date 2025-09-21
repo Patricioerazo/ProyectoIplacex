@@ -374,8 +374,78 @@ app.get('/admin', isAdmin, (req, res) => {
     });
 });
 
+//solicitar informe
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
 
+app.get('/informeVentas', isAdmin, (req, res) => {
+    const sql = `
+        SELECT p.idPedido,
+               p.fechaPedido,
+               p.total,
+               c.nombres AS cliente,
+               m.nombreMetodo AS metodoPago,
+               e.estado AS estadoEnvio
+        FROM pedido p
+        JOIN cliente c ON p.idCliente = c.idCliente
+        LEFT JOIN metodopago m ON p.idMetodoPago = m.idMetodoPago
+        LEFT JOIN envio e ON p.idEnvio = e.idEnvio
+        ORDER BY p.fechaPedido DESC;
+    `;
 
+    pool.query(sql, (err, results) => {
+        if (err) {
+            console.error("Error generando informe de ventas:", err);
+            return res.status(500).send("Error generando informe");
+        }
+
+        // enviar la variable pedidos a la vista
+        res.render('informeVentas', { pedidos: results });
+    });
+});
+app.get('/informeVentas/pdf', isAdmin, (req, res) => {
+    const sql = `
+        SELECT p.idPedido,
+               p.fechaPedido,
+               p.total,
+               c.nombres AS cliente,
+               m.nombreMetodo AS metodoPago,
+               e.estado AS estadoEnvio
+        FROM pedido p
+        JOIN cliente c ON p.idCliente = c.idCliente
+        LEFT JOIN metodopago m ON p.idMetodoPago = m.idMetodoPago
+        LEFT JOIN envio e ON p.idEnvio = e.idEnvio
+        ORDER BY p.fechaPedido DESC;
+    `;
+
+    pool.query(sql, (err, results) => {
+        if (err) {
+            console.error("Error generando informe PDF:", err);
+            return res.status(500).send("Error generando informe PDF");
+        }
+
+        // Crear documento PDF
+        const doc = new PDFDocument();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename=informe_ventas.pdf');
+
+        doc.pipe(res);
+
+        // Título
+        doc.fontSize(18).text('Informe de Ventas', { align: 'center' });
+        doc.moveDown();
+
+        // Tabla simple
+        results.forEach(p => {
+            doc.fontSize(12).text(
+                `ID Pedido: ${p.idPedido} | Cliente: ${p.cliente} | Fecha: ${new Date(p.fechaPedido).toLocaleDateString()} | Total: $${p.total} | Pago: ${p.metodoPago || 'N/A'} | Envío: ${p.estadoEnvio || 'Pendiente'}`
+            );
+            doc.moveDown(0.5);
+        });
+
+        doc.end();
+    });
+});
 
 //15. eliminacion con admin
 app.get('/deleteUser/:id', (req, res) => {

@@ -35,16 +35,14 @@ function vaciarCarritoDOM() {
 
 // Función que añade el curso al carrito
 function agregarCurso(e) {
-     e.preventDefault();
-     // Delegation para agregar-carrito
-     if(e.target.classList.contains('agregar-carrito')) {
-          const curso = e.target.parentElement.parentElement;
-          // Enviamos el curso seleccionado para tomar sus datos
-          leerDatosCurso(curso);
-          mostrarAlerta();
-     }
-     
+    if (e.target.classList.contains('agregar-carrito')) {
+        e.preventDefault();  //  evitamos el comportamiento natural en botones de carrito
+        const curso = e.target.closest('.card'); 
+        leerDatosCurso(curso);
+        mostrarAlerta();
+    }
 }
+
 
 // Lee los datos del producto/curso
 function leerDatosCurso(curso) {

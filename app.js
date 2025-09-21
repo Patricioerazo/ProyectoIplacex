@@ -1,4 +1,4 @@
-//invocamos express
+//1. invocamos express
 const express = require('express');
 const app = express();
 
@@ -63,7 +63,7 @@ const bcryptjs = require('bcryptjs');
 //7. var de sesion
 const session = require('express-session');
 const { pool } = require('./database/db');
-const { name } = require('ejs');
+
 app.use(session({
     secret: 'secret',
     resave: true,
@@ -94,20 +94,12 @@ app.get('/register', (req, res) => {
     res.render('register.ejs');
 })
 
-app.get('/updateUser', (req, res) => {
-    res.render('updateUser.ejs');
-})
-
 app.get('/clientes', (req, res) => {
     res.render('clientes.ejs');
 })
 
 app.get('/updateUser', (req, res) => {
     res.render('updateUser.ejs');
-})
-
-app.get('/updatePedido', (req, res) => {
-    res.render('updatePedido.ejs');
 })
 
 app.get('/updateEnvio', (req, res) => {
@@ -126,7 +118,7 @@ app.post('/register', async (req, res) => {
 
     pool.query(
         'INSERT INTO usuario (correo, contrasena, idRol) VALUES (?, ?, ?)',
-        [correo, passwordHash, 3], // 1 = Cliente
+        [correo, passwordHash, 3], // 3 = Cliente
         (error, resultsUsuario) => {
             if (error) {
                 return res.render('register', {
@@ -1001,33 +993,48 @@ app.post('/contactanos', (req, res) => {
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error("Error enviando correo:", error);
-            return res.render('index', {
+        // Consultamos productos otra vez para pasarlos a la vista
+        pool.query("SELECT * FROM producto", (err, resultados) => {
+            if (err) {
+                console.error("Error al cargar productos:", err);
+                return res.status(500).send("Error cargando productos");
+            }
+
+            if (error) {
+                console.error("Error enviando correo:", error);
+                return res.render('index', {
+                    login: req.session.loggedin || false,
+                    name: req.session.name || 'Invitado',
+                    productos: resultados, //aquí pasamos los productos
+                    alert: true,
+                    alertTitle: "Error",
+                    alertMessage: "No se pudo enviar el mensaje. Intenta más tarde.",
+                    alertIcon: "error",
+                    showConfirmButton: true,
+                    timer: false,
+                    ruta: ""
+                });
+            }
+
+            // Si todo va bien
+            res.render('index', {
                 login: req.session.loggedin || false,
                 name: req.session.name || 'Invitado',
+                productos: resultados, // aquí también
                 alert: true,
-                alertTitle: "Error",
-                alertMessage: "No se pudo enviar el mensaje. Intenta más tarde.",
-                alertIcon: "error",
-                showConfirmButton: true,
-                timer: false,
+                alertTitle: "Enviado",
+                alertMessage: "Tu mensaje fue enviado correctamente",
+                alertIcon: "success",
+                showConfirmButton: false,
+                timer: 2500,
                 ruta: ""
             });
-        };
-        res.render('index', {
-            login: req.session.loggedin || false,
-            name: req.session.name || 'Invitado',
-            alert: true,
-            alertTitle: "Enviado",
-            alertMessage: "Tu mensaje fue enviado correctamente",
-            alertIcon: "success",
-            showConfirmButton: false,
-            timer: 2500,
-            ruta: ""
         });
     });
 });
+
+
+
 app.listen(3000, (req, res) => {
     console.log('server is running in port http://localhost:3000')
 });

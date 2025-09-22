@@ -92,10 +92,22 @@ function mostrarAlerta(){
 })};
 
 //paso de finalizar la compra
+// paso de finalizar la compra
 document.querySelector('#finalizar-compra').addEventListener('click', finalizarCompra);
 
 function finalizarCompra(e) {
     e.preventDefault();
+
+    // Validación: carrito vacío
+    if (articulosCarrito.length === 0) {
+        Swal.fire({
+            title: 'Carrito vacío',
+            text: 'Debes agregar productos antes de continuar con la compra.',
+            icon: 'info',
+            confirmButtonText: 'Entendido'
+        });
+        return; // detenemos la función
+    }
 
     // Enviar carrito al backend
     fetch('/api/pedido', {
@@ -107,7 +119,11 @@ function finalizarCompra(e) {
     })
     .then(res => res.json())
     .then(data => {
-        Swal.fire('Pedido realizado', 'Tu compra fue registrada con éxito, te contactaremos a la brevedad', 'success');
+        Swal.fire(
+            'Pedido realizado',
+            'Tu compra fue registrada con éxito, te contactaremos a la brevedad',
+            'success'
+        );
         console.log(data);
         // limpiar carrito
         articulosCarrito = [];
